@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>❤️ 小周周 ❤️</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    overflow: hidden;
+    font-family: 'PingFang SC', 'Microsoft YaHei', 'Hiragino Sans GB', sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* 背景星星 */
+  .stars {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .star {
+    position: absolute;
+    background: white;
+    border-radius: 50%;
+    animation: twinkle var(--dur) ease-in-out infinite;
+    animation-delay: var(--delay);
+    opacity: 0;
+  }
+
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.2; transform: scale(1); }
+    50%      { opacity: 1;   transform: scale(1.8); }
+  }
+
+  /* 主容器 */
+  .container {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  /* 爱心 - 纯CSS */
+  .heart-wrapper {
+    position: relative;
+    animation: heartBeat 1.2s ease-in-out infinite;
+  }
+
+  @keyframes heartBeat {
+    0%, 100% { transform: scale(1); }
+    14%      { transform: scale(1.15); }
+    28%      { transform: scale(1); }
+    42%      { transform: scale(1.15); }
+    56%      { transform: scale(1); }
+  }
+
+  .heart {
+    position: relative;
+    width: 180px;
+    height: 160px;
+    margin: 0 auto;
+  }
+
+  .heart::before,
+  .heart::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    width: 90px;
+    height: 145px;
+    border-radius: 90px 90px 0 0;
+    background: linear-gradient(180deg, #ff6b6b 0%, #ee5a24 60%, #e84118 100%);
+    box-shadow:
+      0 0 30px rgba(255, 107, 107, 0.6),
+      0 0 60px rgba(238, 90, 36, 0.4),
+      0 0 90px rgba(232, 65, 24, 0.3),
+      inset 0 -10px 20px rgba(0, 0, 0, 0.15);
+  }
+
+  .heart::before {
+    left: 90px;
+    transform: rotate(-45deg);
+    transform-origin: 0 100%;
+  }
+
+  .heart::after {
+    left: 0;
+    transform: rotate(45deg);
+    transform-origin: 100% 100%;
+  }
+
+  /* 爱心底部尖角 */
+  .heart-inner {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 90px solid transparent;
+    border-right: 90px solid transparent;
+    border-top: 130px solid #e84118;
+    z-index: -1;
+  }
+
+  /* 名字容器 */
+  .name-container {
+    text-align: center;
+    animation: fadeInUp 1.5s ease-out 0.5s both;
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .name-text {
+    font-size: 42px;
+    font-weight: 800;
+    letter-spacing: 8px;
+    background: linear-gradient(135deg, #ff6b6b, #ffa502, #ff6348, #ff6b6b);
+    background-size: 300% 300%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: gradientShift 3s ease infinite;
+    text-shadow: none;
+    filter: drop-shadow(0 0 15px rgba(255, 107, 107, 0.5));
+  }
+
+  @keyframes gradientShift {
+    0%, 100% { background-position: 0% 50%; }
+    50%      { background-position: 100% 50%; }
+  }
+
+  .subtitle {
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.7);
+    letter-spacing: 4px;
+    margin-top: 8px;
+    animation: fadeInUp 1.8s ease-out 0.8s both;
+  }
+
+  .love-emoji {
+    font-size: 28px;
+    animation: bounce 0.8s ease-in-out infinite;
+    animation-delay: var(--bounce-delay);
+  }
+
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-12px); }
+  }
+
+  /* 漂浮爱心粒子 */
+  .floating-hearts {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  .float-heart {
+    position: absolute;
+    bottom: -60px;
+    font-size: var(--size);
+    animation: floatUp var(--float-dur) ease-in infinite;
+    animation-delay: var(--float-delay);
+    opacity: 0;
+    color: var(--color);
+  }
+
+  @keyframes floatUp {
+    0% {
+      opacity: 0;
+      transform: translateY(0) translateX(0) rotate(0deg) scale(0.5);
+    }
+    10% {
+      opacity: 0.9;
+    }
+    50% {
+      opacity: 0.7;
+      transform: translateY(-50vh) translateX(var(--drift)) rotate(180deg) scale(1);
+    }
+    90% {
+      opacity: 0.2;
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-100vh) translateX(var(--drift2)) rotate(360deg) scale(0.3);
+    }
+  }
+
+  /* 底部提示 */
+  .footer {
+    position: fixed;
+    bottom: 30px;
+    z-index: 10;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 12px;
+    letter-spacing: 2px;
+    animation: fadeInUp 2s ease-out 1.2s both;
+  }
+
+  /* 触摸波纹 */
+  .ripple {
+    position: fixed;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 107, 107, 0.6);
+    animation: rippleEffect 1s ease-out forwards;
+    pointer-events: none;
+    z-index: 20;
+  }
+
+  @keyframes rippleEffect {
+    from {
+      width: 0; height: 0;
+      opacity: 1;
+    }
+    to {
+      width: 150px; height: 150px;
+      opacity: 0;
+      margin-left: -75px;
+      margin-top: -75px;
+    }
+  }
+
+  /* 响应式 */
+  @media (max-width: 480px) {
+    .heart { width: 140px; height: 125px; }
+    .heart::before, .heart::after {
+      width: 70px;
+      height: 113px;
+      border-radius: 70px 70px 0 0;
+    }
+    .heart::before { left: 70px; }
+    .heart-inner {
+      border-left-width: 70px;
+      border-right-width: 70px;
+      border-top-width: 100px;
+    }
+    .name-text { font-size: 32px; letter-spacing: 6px; }
+    .subtitle { font-size: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- 星空背景 -->
+<div class="stars" id="stars"></div>
+
+<!-- 漂浮爱心 -->
+<div class="floating-hearts" id="floatingHearts"></div>
+
+<!-- 主体内容 -->
+<div class="container">
+  <!-- 爱心 -->
+  <div class="heart-wrapper">
+    <div class="heart">
+      <div class="heart-inner"></div>
+    </div>
+  </div>
+
+  <!-- 名字 -->
+  <div class="name-container">
+    <div style="display: flex; align-items: center; justify-content: center; gap: 12px;">
+      <span class="love-emoji" style="--bounce-delay: 0s;">💕</span>
+      <span class="name-text">小周周</span>
+      <span class="love-emoji" style="--bounce-delay: 0.3s;">💕</span>
+    </div>
+    <div class="subtitle">✨ 你是我的心跳 ✨</div>
+  </div>
+</div>
+
+<!-- 底部文字 -->
+<div class="footer">💗 长按屏幕 绽放爱心 💗</div>
+
+<script>
+  // ===== 生成星空 =====
+  const starsContainer = document.getElementById('stars');
+  for (let i = 0; i < 80; i++) {
+    const star = document.createElement('div');
+    star.className = 'star';
+    const size = Math.random() * 3 + 1;
+    star.style.cssText = `
+      width: ${size}px;
+      height: ${size}px;
+      top: ${Math.random() * 100}%;
+      left: ${Math.random() * 100}%;
+      --dur: ${Math.random() * 3 + 2}s;
+      --delay: ${Math.random() * 5}s;
+    `;
+    starsContainer.appendChild(star);
+  }
+
+  // ===== 漂浮爱心生成 =====
+  const floatingContainer = document.getElementById('floatingHearts');
+  const heartEmojis = ['❤️', '💕', '💗', '💖', '💝', '💘', '🩷', '♥️', '💓', '💞'];
+  const colors = [
+    '#ff6b6b', '#ff8787', '#ffa8a8', '#ff4757',
+    '#ff6348', '#ff7979', '#e84118', '#ff5252',
+    '#ff4d4d', '#ff7675'
+  ];
+
+  function createFloatingHeart() {
+    const heart = document.createElement('span');
+    heart.className = 'float-heart';
+    heart.textContent = heartEmojis[Math.floor(Math.random() * heartEmojis.length)];
+    heart.style.cssText = `
+      left: ${Math.random() * 90 + 5}%;
+      --size: ${Math.random() * 20 + 14}px;
+      --float-dur: ${Math.random() * 6 + 5}s;
+      --float-delay: ${Math.random() * 4}s;
+      --drift: ${Math.random() * 60 - 30}px;
+      --drift2: ${Math.random() * 40 - 20}px;
+      --color: ${colors[Math.floor(Math.random() * colors.length)]};
+    `;
+    floatingContainer.appendChild(heart);
+
+    // 自动移除
+    const dur = parseFloat(heart.style.getPropertyValue('--float-dur')) +
+                parseFloat(heart.style.getPropertyValue('--float-delay'));
+    setTimeout(() => {
+      if (heart.parentNode) heart.parentNode.removeChild(heart);
+    }, dur * 1000 + 1000);
+  }
+
+  // 初始生成一批
+  for (let i = 0; i < 12; i++) {
+    setTimeout(() => createFloatingHeart(), i * 400);
+  }
+
+  // 持续生成
+  setInterval(() => createFloatingHeart(), 1200);
+
+  // ===== 触摸互动 =====
+  function createRipple(x, y) {
+    const ripple = document.createElement('div');
+    ripple.className = 'ripple';
+    ripple.style.left = x + 'px';
+    ripple.style.top = y + 'px';
+    document.body.appendChild(ripple);
+    setTimeout(() => ripple.remove(), 1000);
+  }
+
+  function spawnHeartsAt(x, y, count) {
+    for (let i = 0; i < count; i++) {
+      const heart = document.createElement('span');
+      heart.className = 'float-heart';
+      heart.textContent = heartEmojis[Math.floor(Math.random() * heartEmojis.length)];
+      const angle = (Math.PI * 2 * i) / count + Math.random() * 0.5;
+      const distance = Math.random() * 80 + 30;
+      const dx = Math.cos(angle) * distance;
+      const dy = Math.sin(angle) * distance - 60;
+      heart.style.cssText = `
+        left: ${x}px;
+        top: ${y}px;
+        --size: ${Math.random() * 16 + 12}px;
+        --float-dur: ${Math.random() * 2 + 2}s;
+        --float-delay: 0s;
+        --drift: ${dx}px;
+        --drift2: ${dx * 0.5}px;
+        --color: ${colors[Math.floor(Math.random() * colors.length)]};
+      `;
+      floatingContainer.appendChild(heart);
+      setTimeout(() => heart.remove(), 4000);
+    }
+  }
+
+  // 覆盖更活泼的浮动动画（触摸生成用）
+  const touchStyle = document.createElement('style');
+  touchStyle.textContent = `
+    .float-heart.touch-spawn {
+      animation: burstOut var(--burst-dur) ease-out forwards !important;
+    }
+    @keyframes burstOut {
+      0%   { opacity: 1; transform: translate(0, 0) rotate(0deg) scale(0.3); }
+      30%  { opacity: 1; transform: translate(var(--drift), var(--rise)) rotate(90deg) scale(1.1); }
+      100% { opacity: 0; transform: translate(var(--drift2), calc(var(--rise) - 40px)) rotate(200deg) scale(0.2); }
+    }
+  `;
+  document.head.appendChild(touchStyle);
+
+  document.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    Array.from(e.touches).forEach(touch => {
+      createRipple(touch.clientX, touch.clientY);
+      for (let i = 0; i < 6; i++) {
+        const h = document.createElement('span');
+        h.className = 'float-heart touch-spawn';
+        h.textContent = heartEmojis[Math.floor(Math.random() * heartEmojis.length)];
+        const angle = (Math.PI * 2 * i) / 6;
+        const dist = 50 + Math.random() * 40;
+        h.style.cssText = `
+          left: ${touch.clientX}px;
+          top: ${touch.clientY}px;
+          --size: ${Math.random() * 18 + 14}px;
+          --burst-dur: ${Math.random() * 1 + 1.2}s;
+          --drift: ${Math.cos(angle) * dist}px;
+          --drift2: ${Math.cos(angle) * dist * 1.3}px;
+          --rise: ${Math.sin(angle) * dist - 30}px;
+          --color: ${colors[Math.floor(Math.random() * colors.length)]};
+        `;
+        floatingContainer.appendChild(h);
+        setTimeout(() => h.remove(), 2500);
+      }
+    });
+  }, { passive: false });
+
+  document.addEventListener('click', (e) => {
+    createRipple(e.clientX, e.clientY);
+    for (let i = 0; i < 6; i++) {
+      const h = document.createElement('span');
+      h.className = 'float-heart touch-spawn';
+      h.textContent = heartEmojis[Math.floor(Math.random() * heartEmojis.length)];
+      const angle = (Math.PI * 2 * i) / 6;
+      const dist = 50 + Math.random() * 40;
+      h.style.cssText = `
+        left: ${e.clientX}px;
+        top: ${e.clientY}px;
+        --size: ${Math.random() * 18 + 14}px;
+        --burst-dur: ${Math.random() * 1 + 1.2}s;
+        --drift: ${Math.cos(angle) * dist}px;
+        --drift2: ${Math.cos(angle) * dist * 1.3}px;
+        --rise: ${Math.sin(angle) * dist - 30}px;
+        --color: ${colors[Math.floor(Math.random() * colors.length)]};
+      `;
+      floatingContainer.appendChild(h);
+      setTimeout(() => h.remove(), 2500);
+    }
+  });
+
+  console.log('❤️ 小周周 - 爱心已准备就绪 ❤️');
+</script>
+</body>
+</html>
