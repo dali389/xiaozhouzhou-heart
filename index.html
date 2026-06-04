@@ -2,29 +2,47 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>❤️ 小周周 ❤️</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body {
-    width:100vw; height:100vh; overflow:hidden;
+    width:100vw; min-height:100vh;
     font-family:'PingFang SC','Microsoft YaHei','Hiragino Sans GB',sans-serif;
     background:#06040a;
     -webkit-tap-highlight-color:transparent;
     user-select:none; -webkit-user-select:none;
+    overflow-x:hidden;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
   }
-  canvas#bg  { position:fixed; top:0; left:0; z-index:1; }
+  canvas#bg  { position:fixed; top:0; left:0; z-index:1; pointer-events:none; }
   canvas#fg  { position:fixed; top:0; left:0; z-index:20; pointer-events:none; }
   canvas#petal { position:fixed; top:0; left:0; z-index:5; pointer-events:none; }
 
-  /* 文字层 */
-  .ui {
+  /* 交互层 */
+  .interact-layer {
     position:fixed; top:0; left:0; width:100%; height:100%;
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
-    pointer-events:none; z-index:10;
+    z-index:25;
+  }
+
+  /* 主内容 */
+  .main-content {
+    position:relative; z-index:10;
+    display:flex; flex-direction:column; align-items:center;
+    padding-top:clamp(30px,8vh,80px);
+    padding-bottom:40px;
+    pointer-events:none;
+    min-height:100vh;
+  }
+
+  /* ========== 文字区域 ========== */
+  .text-section {
+    pointer-events:none;
+    text-align:center;
   }
   .name-wrap {
-    display:flex; align-items:center; gap:clamp(8px,2vw,16px);
+    display:flex; align-items:center; justify-content:center; gap:clamp(8px,2vw,16px);
   }
   .name {
     font-size:clamp(34px,7vw,54px); font-weight:900; letter-spacing:0.3em;
@@ -63,8 +81,117 @@
     letter-spacing:0.3em; margin-top:6px;
     animation:nameIn 1s cubic-bezier(0.16,1,0.3,1) 0.7s both;
   }
+
+  /* ========== 照片画廊 ========== */
+  .gallery {
+    display:flex; justify-content:center; align-items:center;
+    gap:clamp(12px,3vw,24px);
+    margin-top:clamp(24px,5vh,50px);
+    flex-wrap:wrap;
+    pointer-events:auto;
+    animation:nameIn 1.2s cubic-bezier(0.16,1,0.3,1) 0.9s both;
+  }
+  .polaroid {
+    position:relative;
+    width:clamp(90px,22vw,140px);
+    background:rgba(255,255,255,0.92);
+    padding:clamp(6px,1.5vw,10px);
+    padding-bottom:clamp(20px,4vw,32px);
+    border-radius:4px;
+    box-shadow:0 4px 15px rgba(0,0,0,0.4), 0 0 30px rgba(255,130,170,0.2);
+    transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .polaroid:nth-child(1) { transform:rotate(-4deg); }
+  .polaroid:nth-child(2) { transform:rotate(2deg) translateY(-8px); }
+  .polaroid:nth-child(3) { transform:rotate(3deg); }
+  .polaroid:active {
+    transform:scale(0.95) !important;
+    transition:transform 0.1s ease;
+  }
+  @media (hover:hover) {
+    .polaroid:hover { transform:scale(1.08) rotate(0deg) !important; z-index:30; }
+  }
+  .polaroid img {
+    display:block; width:100%; aspect-ratio:3/4; object-fit:cover;
+    border-radius:2px;
+    pointer-events:none;
+  }
+  .polaroid .caption {
+    position:absolute; bottom:clamp(3px,1vw,8px); left:0; right:0;
+    text-align:center;
+    font-size:clamp(10px,2vw,13px);
+    color:#c44;
+    letter-spacing:0.1em;
+  }
+  /* 拍立得浮动 */
+  .polaroid:nth-child(1) { animation:floatA 3.5s ease-in-out infinite; }
+  .polaroid:nth-child(2) { animation:floatB 4s ease-in-out infinite 0.5s; }
+  .polaroid:nth-child(3) { animation:floatA 3.8s ease-in-out infinite 1s; }
+  @keyframes floatA {
+    0%,100%{ transform:rotate(-4deg) translateY(0); }
+    50%    { transform:rotate(-3deg) translateY(-8px); }
+  }
+  @keyframes floatB {
+    0%,100%{ transform:rotate(2deg) translateY(-8px); }
+    50%    { transform:rotate(3deg) translateY(-2px); }
+  }
+
+  /* ========== 全屏照片查看器 ========== */
+  .viewer-overlay {
+    position:fixed; top:0; left:0; width:100%; height:100%;
+    background:rgba(2,2,10,0.94);
+    z-index:100;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    opacity:0; pointer-events:none;
+    transition:opacity 0.35s ease;
+    backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  }
+  .viewer-overlay.active { opacity:1; pointer-events:auto; }
+  .viewer-img-wrap {
+    position:relative;
+    max-width:90vw; max-height:70vh;
+    border-radius:8px; overflow:hidden;
+    box-shadow:0 0 60px rgba(255,120,160,0.3), 0 0 120px rgba(255,80,130,0.15), 0 20px 50px rgba(0,0,0,0.6);
+    transform:scale(0.9);
+    transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .viewer-overlay.active .viewer-img-wrap { transform:scale(1); }
+  .viewer-img-wrap img {
+    display:block; max-width:90vw; max-height:70vh; object-fit:contain;
+  }
+  .viewer-close {
+    position:absolute; top:10px; right:14px;
+    width:36px; height:36px; border-radius:50%;
+    background:rgba(0,0,0,0.5); color:#fff; border:none;
+    font-size:20px; cursor:pointer; z-index:5;
+    display:flex; align-items:center; justify-content:center;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .viewer-nav {
+    position:absolute; top:50%; transform:translateY(-50%);
+    width:40px; height:40px; border-radius:50%;
+    background:rgba(0,0,0,0.5); color:#fff; border:none;
+    font-size:20px; cursor:pointer; z-index:5;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .viewer-nav.prev { left:-50px; }
+  .viewer-nav.next { right:-50px; }
+  @media (max-width:500px) {
+    .viewer-nav.prev { left:8px; }
+    .viewer-nav.next { right:8px; }
+  }
+  .viewer-counter {
+    color:rgba(255,255,255,0.7); margin-top:16px; font-size:14px; letter-spacing:0.2em;
+  }
+  .viewer-swipe-hint {
+    color:rgba(255,255,255,0.35); margin-top:8px; font-size:12px;
+  }
+
+  /* ========== 底部提示 ========== */
   .hint {
-    position:fixed; bottom:36px; width:100%; text-align:center;
+    position:fixed; bottom:30px; width:100%; text-align:center;
     color:rgba(255,255,255,0.32); font-size:12px; letter-spacing:0.3em;
     z-index:10; pointer-events:none;
     animation:nameIn 1s ease 1.2s both;
@@ -91,21 +218,55 @@
 <canvas id="petal"></canvas>
 <canvas id="fg"></canvas>
 
-<div class="ui">
-  <div class="name-wrap">
-    <span class="icon">💕</span>
-    <span class="name">小 周 周</span>
-    <span class="icon">💕</span>
+<!-- 交互层 -->
+<div class="interact-layer" id="interact"></div>
+
+<!-- 主内容 -->
+<div class="main-content">
+  <div class="text-section">
+    <div class="name-wrap">
+      <span class="icon">💕</span>
+      <span class="name">小 周 周</span>
+      <span class="icon">💕</span>
+    </div>
+    <div class="subtitle">✨ 你是我今生最美的相遇 ✨</div>
+    <div class="days" id="daysTxt"></div>
   </div>
-  <span class="subtitle">✨ 你是我今生最美的相遇 ✨</span>
-  <span class="days" id="daysTxt"></span>
+
+  <!-- 拍立得照片 -->
+  <div class="gallery" id="gallery">
+    <div class="polaroid" data-idx="0">
+      <img src="img/01.jpg" alt="小周周 photo 1" loading="lazy">
+      <span class="caption">💗 最美的你</span>
+    </div>
+    <div class="polaroid" data-idx="1">
+      <img src="img/02.jpg" alt="小周周 photo 2" loading="lazy">
+      <span class="caption">💗 心动的你</span>
+    </div>
+    <div class="polaroid" data-idx="2">
+      <img src="img/03.jpg" alt="小周周 photo 3" loading="lazy">
+      <span class="caption">💗 甜甜的你</span>
+    </div>
+  </div>
 </div>
 
-<div class="hint">💗 长按屏幕 · 连续绽放 💗 ｜ 双击切换模式</div>
+<!-- 全屏查看器 -->
+<div class="viewer-overlay" id="viewer">
+  <div class="viewer-img-wrap">
+    <button class="viewer-close" id="viewerClose">✕</button>
+    <button class="viewer-nav prev" id="viewerPrev">◂</button>
+    <button class="viewer-nav next" id="viewerNext">▸</button>
+    <img id="viewerImg" src="" alt="">
+  </div>
+  <div class="viewer-counter" id="viewerCounter"></div>
+  <div class="viewer-swipe-hint">← 左右滑动切换 →</div>
+</div>
+
+<div class="hint">💗 点击照片查看大图 💗 ｜ 点击空白绽放爱心</div>
 
 <script>
 // ============================================================
-//  ULTIMATE 版 — 三重 Canvas + 长按连爆 + 花瓣雨 + 视差
+//  ULTIMATE + PHOTOS — 三重Canvas + 花瓣雨 + 拍立得画廊
 // ============================================================
 const bgCvs   = document.getElementById('bg');
 const petCvs  = document.getElementById('petal');
@@ -116,8 +277,8 @@ const fgCtx   = fgCvs.getContext('2d');
 
 let W,H,cx,cy;
 let mouseX=-999, mouseY=-999, pressing=false, pressTimer=0;
-let mode = 0; // 0=click, 1=continuous
-let tiltX=0, tiltY=0; // device orientation
+let mode = 0;
+let tiltX=0, tiltY=0;
 
 function resize(){
   W=bgCvs.width=petCvs.width=fgCvs.width=window.innerWidth;
@@ -131,96 +292,64 @@ function rnd(a,b){ return a+Math.random()*(b-a); }
 function rndI(a,b){ return Math.floor(rnd(a,b+1)); }
 function dist(x1,y1,x2,y2){ const dx=x2-x1,dy=y2-y1; return Math.sqrt(dx*dx+dy*dy); }
 function hsl(h,s,l,a=1){ return `hsla(${h},${s}%,${l}%,${a})`; }
+function lerp(a,b,t){return a+(b-a)*t;}
 
 // ============================================================
-//  Layer 1: 背景星空 + 极光 + 流星
+//  Layer 1: 背景星空 + 星云 + 流星
 // ============================================================
 const stars=[];
-for(let i=0;i<120;i++){
-  stars.push({
-    x:rnd(0,W), y:rnd(0,H), r:rnd(0.4,2.2),
-    twinkle:rnd(0.3,1), phase:rnd(0,TAU),
-    hue:rnd(30,60),
-  });
+for(let i=0;i<130;i++){
+  stars.push({x:rnd(0,W),y:rnd(0,H),r:rnd(0.4,2.3),twinkle:rnd(0.3,1),phase:rnd(0,TAU),hue:rnd(30,60)});
 }
 const nebula=[];
 for(let i=0;i<5;i++){
-  nebula.push({
-    x:rnd(0,W), y:rnd(0,H*0.6), r:rnd(80,200),
-    hue:rnd(260,340), alpha:rnd(0.02,0.06),
-    vx:rnd(-0.3,0.3), vy:rnd(-0.2,0.2),
-  });
+  nebula.push({x:rnd(0,W),y:rnd(0,H*0.6),r:rnd(80,200),hue:rnd(260,340),alpha:rnd(0.02,0.06),vx:rnd(-0.3,0.3),vy:rnd(-0.2,0.2)});
 }
 const meteors=[];
 function spawnMeteor(){
-  meteors.push({
-    x:rnd(-100,W), y:rnd(-50, H*0.35),
-    vx:rnd(2.5,7), vy:rnd(1.5,5),
-    life:rnd(1.5,4), maxLife:0,
-    trail:[],
-  });
+  meteors.push({x:rnd(-100,W),y:rnd(-50,H*0.35),vx:rnd(2.5,7),vy:rnd(1.5,5),life:rnd(1.5,4),maxLife:0,trail:[]});
   meteors[meteors.length-1].maxLife=meteors[meteors.length-1].life;
 }
 
 function drawBg(time){
   const t=time*0.001;
   bgCtx.clearRect(0,0,W,H);
-
-  // 深空背景
   const grad=bgCtx.createRadialGradient(cx,cy*0.7,0,cx,cy,Math.max(W,H)*0.8);
-  grad.addColorStop(0,'#140d20');
-  grad.addColorStop(0.5,'#0b0814');
-  grad.addColorStop(1,'#04030c');
+  grad.addColorStop(0,'#140d20'); grad.addColorStop(0.5,'#0b0814'); grad.addColorStop(1,'#04030c');
   bgCtx.fillStyle=grad; bgCtx.fillRect(0,0,W,H);
-
-  // 星云
   for(const n of nebula){
     n.x+=n.vx; n.y+=n.vy;
     if(n.x<-200)n.x=W+200; if(n.x>W+200)n.x=-200;
     if(n.y<-200)n.y=H+200; if(n.y>H+200)n.y=-200;
     const g=bgCtx.createRadialGradient(n.x,n.y,0,n.x,n.y,n.r);
-    g.addColorStop(0,`hsla(${n.hue},70%,50%,${n.alpha})`);
-    g.addColorStop(1,'rgba(0,0,0,0)');
+    g.addColorStop(0,`hsla(${n.hue},70%,50%,${n.alpha})`); g.addColorStop(1,'rgba(0,0,0,0)');
     bgCtx.fillStyle=g; bgCtx.fillRect(n.x-n.r,n.y-n.r,n.r*2,n.r*2);
   }
-
-  // 星星
   for(const s of stars){
     const blink=0.3+0.7*(0.5+0.5*Math.sin(t*3*s.twinkle+s.phase));
     bgCtx.fillStyle=`hsla(${s.hue},40%,85%,${blink})`;
     bgCtx.beginPath(); bgCtx.arc(s.x,s.y,s.r,0,TAU); bgCtx.fill();
-    // glow
     if(blink>0.7){
       const g2=bgCtx.createRadialGradient(s.x,s.y,0,s.x,s.y,s.r*3);
-      g2.addColorStop(0,`hsla(${s.hue},40%,90%,${blink*0.3})`);
-      g2.addColorStop(1,'rgba(0,0,0,0)');
+      g2.addColorStop(0,`hsla(${s.hue},40%,90%,${blink*0.3})`); g2.addColorStop(1,'rgba(0,0,0,0)');
       bgCtx.fillStyle=g2; bgCtx.beginPath(); bgCtx.arc(s.x,s.y,s.r*3,0,TAU); bgCtx.fill();
     }
   }
-
-  // 流星
   for(let i=meteors.length-1;i>=0;i--){
     const m=meteors[i];
     m.x+=m.vx; m.y+=m.vy; m.life-=0.016;
     m.trail.push({x:m.x,y:m.y,life:0.4});
-    for(let j=m.trail.length-1;j>=0;j--){
-      m.trail[j].life-=0.016;
-      if(m.trail[j].life<=0) m.trail.splice(j,1);
-    }
+    for(let j=m.trail.length-1;j>=0;j--){ m.trail[j].life-=0.016; if(m.trail[j].life<=0) m.trail.splice(j,1); }
     if(m.life<=0||m.x>W+100||m.y>H+100){ meteors.splice(i,1); continue; }
     const a=Math.min(1,m.life/m.maxLife);
-    // trail
     if(m.trail.length>1){
       bgCtx.beginPath(); bgCtx.moveTo(m.trail[0].x,m.trail[0].y);
       for(let j=1;j<m.trail.length;j++) bgCtx.lineTo(m.trail[j].x,m.trail[j].y);
       bgCtx.lineTo(m.x,m.y);
-      bgCtx.strokeStyle=`rgba(255,240,255,${a*0.7})`; bgCtx.lineWidth=1.5; bgCtx.lineCap='round';
-      bgCtx.stroke();
+      bgCtx.strokeStyle=`rgba(255,240,255,${a*0.7})`; bgCtx.lineWidth=1.5; bgCtx.lineCap='round'; bgCtx.stroke();
     }
     const mg=bgCtx.createRadialGradient(m.x,m.y,0,m.x,m.y,20);
-    mg.addColorStop(0,`rgba(255,255,255,${a})`);
-    mg.addColorStop(0.4,`rgba(220,200,255,${a*0.5})`);
-    mg.addColorStop(1,'rgba(0,0,0,0)');
+    mg.addColorStop(0,`rgba(255,255,255,${a})`); mg.addColorStop(0.4,`rgba(220,200,255,${a*0.5})`); mg.addColorStop(1,'rgba(0,0,0,0)');
     bgCtx.fillStyle=mg; bgCtx.beginPath(); bgCtx.arc(m.x,m.y,20,0,TAU); bgCtx.fill();
   }
 }
@@ -231,25 +360,11 @@ function drawBg(time){
 const petals=[];
 const petalColors=['#f9a8d4','#f472b6','#fbcfe8','#fda4af','#fcd34d','#fb923c','#fde68a','#fecdd3'];
 function spawnPetal(x,y){
-  return {
-    x:x??rnd(-30,W+30), y:y??rnd(-60,-10),
-    r:rnd(3,8), rot:rnd(0,TAU), rotV:rnd(-0.05,0.05),
-    vx:rnd(-0.6,0.6), vy:rnd(1.2,3.5),
-    wobbleAmp:rnd(0.3,1.5), wobbleSpd:rnd(0.02,0.05), wobblePhase:rnd(0,TAU),
-    color:petalColors[rndI(0,petalColors.length-1)],
-    life:rnd(8,18), maxLife:0,
-    sway:rnd(-0.4,0.4),
-  };
+  return {x:x??rnd(-30,W+30),y:y??rnd(-60,-10),r:rnd(3,8),rot:rnd(0,TAU),rotV:rnd(-0.05,0.05),vx:rnd(-0.6,0.6),vy:rnd(1.2,3.5),wobbleAmp:rnd(0.3,1.5),wobbleSpd:rnd(0.02,0.05),wobblePhase:rnd(0,TAU),color:petalColors[rndI(0,petalColors.length-1)],life:rnd(8,18),maxLife:0,sway:rnd(-0.4,0.4)};
 }
-function initPetals(){
-  for(let i=0;i<40;i++){
-    const p=spawnPetal();
-    p.y=rnd(-60,H+60); p.life=rnd(2,18); // stagger
-    petals.push(p);
-    p.maxLife=p.life;
-  }
-}
-initPetals();
+(function initPetals(){
+  for(let i=0;i<45;i++){ const p=spawnPetal(); p.y=rnd(-60,H+60); p.life=rnd(2,18); p.maxLife=p.life; petals.push(p); }
+})();
 
 function drawPetals(time){
   const t=time*0.001;
@@ -258,28 +373,17 @@ function drawPetals(time){
     const p=petals[i];
     p.y+=p.vy; p.x+=p.vx+Math.sin(t*p.wobbleSpd+p.wobblePhase)*p.wobbleAmp+p.sway;
     p.rot+=p.rotV; p.life-=0.016;
-    if(p.life<=0||p.y>H+80){
-      petals.splice(i,1);
-      petals.push(spawnPetal());
-      continue;
-    }
-    const a=Math.min(1, p.life/p.maxLife, p.y<0?p.y/30+1:1, (H-p.y)/40);
+    if(p.life<=0||p.y>H+80){ petals.splice(i,1); petals.push(spawnPetal()); continue; }
+    const a=Math.min(1,p.life/p.maxLife,p.y<0?p.y/30+1:1,(H-p.y)/40);
     if(a<=0) continue;
-    petCtx.save();
-    petCtx.globalAlpha=a;
-    petCtx.translate(p.x,p.y); petCtx.rotate(p.rot);
-    // petal shape (ellipse)
-    petCtx.fillStyle=p.color;
-    petCtx.beginPath(); petCtx.ellipse(0,0,p.r,p.r*1.8,0,0,TAU); petCtx.fill();
-    // vein
-    petCtx.strokeStyle='rgba(255,255,255,0.3)';
-    petCtx.lineWidth=0.4;
+    petCtx.save(); petCtx.globalAlpha=a; petCtx.translate(p.x,p.y); petCtx.rotate(p.rot);
+    petCtx.fillStyle=p.color; petCtx.beginPath(); petCtx.ellipse(0,0,p.r,p.r*1.8,0,0,TAU); petCtx.fill();
+    petCtx.strokeStyle='rgba(255,255,255,0.3)'; petCtx.lineWidth=0.4;
     petCtx.beginPath(); petCtx.moveTo(0,-p.r*1.5); petCtx.lineTo(0,p.r*1.5); petCtx.stroke();
     petCtx.restore();
   }
-  // keep count
-  while(petals.length<40) petals.push(spawnPetal());
-  if(petals.length>60) petals.splice(0,petals.length-60);
+  while(petals.length<45) petals.push(spawnPetal());
+  if(petals.length>65) petals.splice(0,petals.length-65);
 }
 
 // ============================================================
@@ -288,34 +392,19 @@ function drawPetals(time){
 const fgParts=[];
 class FgParticle {
   constructor(x,y,opts={}){
-    this.x=x; this.y=y;
-    this.vx=opts.vx??rnd(-1,1); this.vy=opts.vy??rnd(-1,1);
-    this.r=opts.r??rnd(1,3.5);
-    this.h=opts.h??rnd(340,30);
+    this.x=x; this.y=y; this.vx=opts.vx??rnd(-1,1); this.vy=opts.vy??rnd(-1,1);
+    this.r=opts.r??rnd(1,3.5); this.h=opts.h??rnd(340,30);
     this.life=opts.life??rnd(2,5); this.maxLife=this.life;
-    this.friction=opts.friction??0.98;
-    this.gravity=opts.gravity??0.015;
-    this.fade=opts.fade??'smooth';
+    this.friction=opts.friction??0.98; this.gravity=opts.gravity??0.015; this.fade=opts.fade??'smooth';
   }
-  update(dt){
-    this.vx*=this.friction; this.vy*=this.friction;
-    this.vy+=this.gravity*dt*60;
-    this.x+=this.vx*dt*60; this.y+=this.vy*dt*60;
-    this.life-=dt;
-  }
+  update(dt){ this.vx*=this.friction; this.vy*=this.friction; this.vy+=this.gravity*dt*60; this.x+=this.vx*dt*60; this.y+=this.vy*dt*60; this.life-=dt; }
   alive(){return this.life>0;}
-  alpha(){
-    const t=this.life/this.maxLife;
-    return this.fade==='late'?Math.min(1,t*3):t;
-  }
+  alpha(){ const t=this.life/this.maxLife; return this.fade==='late'?Math.min(1,t*3):t; }
   draw(ctx){
     const a=this.alpha(); if(a<=0) return;
-    const hue=(this.h+(1-a)*40)%360;
-    const glow=this.r*(1+a*2.5);
+    const hue=(this.h+(1-a)*40)%360, glow=this.r*(1+a*2.5);
     const g=ctx.createRadialGradient(this.x,this.y,0,this.x,this.y,glow);
-    g.addColorStop(0,hsl(hue,80,70,a));
-    g.addColorStop(0.5,hsl(hue,70,50,a*0.5));
-    g.addColorStop(1,hsl(hue,60,30,0));
+    g.addColorStop(0,hsl(hue,80,70,a)); g.addColorStop(0.5,hsl(hue,70,50,a*0.5)); g.addColorStop(1,hsl(hue,60,30,0));
     ctx.fillStyle=g; ctx.beginPath(); ctx.arc(this.x,this.y,glow,0,TAU); ctx.fill();
     ctx.fillStyle=hsl(hue,40,90,a); ctx.beginPath(); ctx.arc(this.x,this.y,this.r*0.5,0,TAU); ctx.fill();
   }
@@ -332,73 +421,44 @@ function burst(x,y,count,opts={}){
   const hue=opts.hue??rnd(340,30);
   for(let i=0;i<count;i++){
     const angle=rnd(0,TAU), spd=rnd(1.5,(opts.speed??4));
-    fgParts.push(new FgParticle(x,y,{
-      vx:Math.cos(angle)*spd, vy:Math.sin(angle)*spd,
-      r:rnd(1,opts.r??3.5), h:hue+rnd(-(opts.hueVar??30),opts.hueVar??30),
-      life:rnd(1.5,(opts.life??3.5)), fade:'late',
-      friction:rnd(0.93,0.97), gravity:rnd(0.01,0.05),
-    }));
+    fgParts.push(new FgParticle(x,y,{vx:Math.cos(angle)*spd,vy:Math.sin(angle)*spd,r:rnd(1,opts.r??3.5),h:hue+rnd(-(opts.hueVar??30),opts.hueVar??30),life:rnd(1.5,(opts.life??3.5)),fade:'late',friction:rnd(0.93,0.97),gravity:rnd(0.01,0.05)}));
   }
 }
 
 function burstHeart(scaleH,count,opts={}){
   for(let i=0;i<count;i++){
-    const t=rnd(0,1);
-    const pt=heartPt(t,scaleH);
-    const x=cx+pt.x+rnd(-4,4), y=(cy-15)+pt.y+rnd(-4,4);
-    fgParts.push(new FgParticle(x,y,{
-      vx:rnd(-0.4,0.4), vy:rnd(-0.4,0.4),
-      r:rnd(0.8,2.8), h:(opts.hue??350)+rnd(-(opts.hueVar??25),opts.hueVar??25),
-      life:rnd(2,(opts.life??5)), fade:'smooth', friction:0.97,
-    }));
+    const t=rnd(0,1), pt=heartPt(t,scaleH);
+    fgParts.push(new FgParticle(cx+pt.x+rnd(-4,4),(cy-15)+pt.y+rnd(-4,4),{vx:rnd(-0.4,0.4),vy:rnd(-0.4,0.4),r:rnd(0.8,2.8),h:(opts.hue??350)+rnd(-(opts.hueVar??25),opts.hueVar??25),life:rnd(2,(opts.life??5)),fade:'smooth',friction:0.97}));
   }
 }
 
-// 初始爱心粒子
 burstHeart(9,180,{hue:350,hueVar:25,life:7});
 
 function drawFg(time){
   fgCtx.clearRect(0,0,W,H);
   const t=time*0.001;
-
-  // 爱心周围光晕
   const aura=fgCtx.createRadialGradient(cx,cy-15,50,cx,cy-15,260);
-  aura.addColorStop(0,'rgba(255,90,140,0.08)');
-  aura.addColorStop(0.6,'rgba(255,70,120,0.03)');
-  aura.addColorStop(1,'rgba(0,0,0,0)');
+  aura.addColorStop(0,'rgba(255,90,140,0.08)'); aura.addColorStop(0.6,'rgba(255,70,120,0.03)'); aura.addColorStop(1,'rgba(0,0,0,0)');
   fgCtx.fillStyle=aura; fgCtx.fillRect(0,0,W,H);
 
-  // 爱心轮廓光环（脉动）
   const pulse=1+Math.sin(t*2.5)*0.04+Math.sin(t*4.3)*0.03;
-  fgCtx.save();
-  fgCtx.globalAlpha=0.25+Math.sin(t*3)*0.08;
-  fgCtx.strokeStyle='rgba(255,130,170,0.5)';
-  fgCtx.lineWidth=2;
-  fgCtx.shadowColor='rgba(255,100,150,0.6)';
-  fgCtx.shadowBlur=15;
+  fgCtx.save(); fgCtx.globalAlpha=0.25+Math.sin(t*3)*0.08;
+  fgCtx.strokeStyle='rgba(255,130,170,0.5)'; fgCtx.lineWidth=2;
+  fgCtx.shadowColor='rgba(255,100,150,0.6)'; fgCtx.shadowBlur=15;
   fgCtx.beginPath();
-  const steps=120;
-  for(let i=0;i<=steps;i++){
-    const pt=heartPt(i/steps,9.2*pulse);
-    if(i===0) fgCtx.moveTo(cx+pt.x,cy-15+pt.y);
-    else fgCtx.lineTo(cx+pt.x,cy-15+pt.y);
-  }
+  for(let i=0;i<=120;i++){ const pt=heartPt(i/120,9.2*pulse); if(i===0) fgCtx.moveTo(cx+pt.x,cy-15+pt.y); else fgCtx.lineTo(cx+pt.x,cy-15+pt.y); }
   fgCtx.closePath(); fgCtx.stroke();
   fgCtx.restore();
 
-  // 粒子
   for(const p of fgParts) p.draw(fgCtx);
 
-  // 按压时的光晕
   if(pressing && mouseX>-900){
     const pg=fgCtx.createRadialGradient(mouseX,mouseY,0,mouseX,mouseY,50);
-    pg.addColorStop(0,'rgba(255,200,220,0.25)');
-    pg.addColorStop(1,'rgba(0,0,0,0)');
+    pg.addColorStop(0,'rgba(255,200,220,0.25)'); pg.addColorStop(1,'rgba(0,0,0,0)');
     fgCtx.fillStyle=pg; fgCtx.beginPath(); fgCtx.arc(mouseX,mouseY,50,0,TAU); fgCtx.fill();
   } else if(mouseX>-900){
     const mg=fgCtx.createRadialGradient(mouseX,mouseY,0,mouseX,mouseY,35);
-    mg.addColorStop(0,'rgba(255,180,200,0.1)');
-    mg.addColorStop(1,'rgba(0,0,0,0)');
+    mg.addColorStop(0,'rgba(255,180,200,0.1)'); mg.addColorStop(1,'rgba(0,0,0,0)');
     fgCtx.fillStyle=mg; fgCtx.beginPath(); fgCtx.arc(mouseX,mouseY,35,0,TAU); fgCtx.fill();
   }
 }
@@ -407,183 +467,160 @@ function drawFg(time){
 //  漂浮文字
 // ============================================================
 const loveMsgs=[
-  '💖 爱你哟','💗 么么哒','💘 永远在一起','💝 你是我的唯一',
-  '💕 只喜欢你','💓 心动了','✨ 好想你','🌸 美美的',
-  '💎 珍贵如你','🦋 我的女神','💐 送你花花','🎀 甜甜的',
-  '💞 心心相印','🌟 星光不及你','🩷 永远爱你','💌 情书送达',
+  '💖 爱你哟','💗 么么哒','💘 永远在一起','💝 你是我的唯一','💕 只喜欢你','💓 心动了','✨ 好想你','🌸 美美的','💎 珍贵如你','🦋 我的女神','💐 送你花花','🎀 甜甜的','💞 心心相印','🌟 星光不及你','🩷 永远爱你','💌 情书送达',
 ];
-
 function floatMsg(x,y){
-  const el=document.createElement('div');
-  el.className='float-msg';
+  const el=document.createElement('div'); el.className='float-msg';
   el.textContent=loveMsgs[rndI(0,loveMsgs.length-1)];
-  el.style.left=x+'px'; el.style.top=y+'px';
-  el.style.transform='translate(-50%,-50%)';
-  document.body.appendChild(el);
-  setTimeout(()=>el.remove(),3000);
+  el.style.left=x+'px'; el.style.top=y+'px'; el.style.transform='translate(-50%,-50%)';
+  document.body.appendChild(el); setTimeout(()=>el.remove(),3000);
 }
 
 // ============================================================
-//  交互
+//  交互（避开照片区域）
 // ============================================================
+function isOnPhoto(el){ return el.closest('.polaroid') || el.closest('.viewer-overlay'); }
+
 function interact(x,y,count){
-  // 多层爆发
   burst(x,y,Math.floor(count*0.5),{hue:rnd(340,20),hueVar:35,speed:5,life:3.5,r:3.5});
   burst(x,y,Math.floor(count*0.3),{hue:rnd(20,60),hueVar:15,speed:3,life:2.5,r:2.5});
   burst(x,y,Math.floor(count*0.2),{hue:0,hueVar:5,speed:4,life:2,r:2});
-  // 爱心轮廓爆发
   const hd=dist(x,y,cx,cy-15);
-  if(hd<220){
-    burstHeart(9,Math.floor((1-hd/220)*60)+10,{hue:355,hueVar:30,life:5});
-  }
-  // 花瓣爆发
+  if(hd<220) burstHeart(9,Math.floor((1-hd/220)*60)+10,{hue:355,hueVar:30,life:5});
   for(let i=0;i<8;i++) petals.push(spawnPetal(x,y));
-  // 漂浮文字
   if(Math.random()<0.5) floatMsg(x,y-30);
 }
 
-// click
-fgCvs.style.pointerEvents='auto';
-fgCvs.addEventListener('click',e=>{
-  if(pressing) return; // ignore if was long press
+const interactEl = document.getElementById('interact');
+interactEl.addEventListener('click',e=>{
+  if(isOnPhoto(e.target)) return;
+  if(pressing) return;
   interact(e.clientX,e.clientY,60);
   floatMsg(e.clientX,e.clientY-30);
 });
-
-// double click → switch mode
-fgCvs.addEventListener('dblclick',e=>{
+interactEl.addEventListener('dblclick',e=>{
+  if(isOnPhoto(e.target)) return;
   e.preventDefault();
   mode=(mode+1)%3;
   const modes=['🎯 点击绽放','🔥 长按连爆','🌀 滑动轨迹'];
   floatMsg(e.clientX,e.clientY-30);
   setTimeout(()=>floatMsg(e.clientX,e.clientY-60),100);
-  // update hint
-  document.querySelector('.hint').textContent=
-    `💗 ${modes[mode]} 💗 ｜ 双击切换`;
+  document.querySelector('.hint').textContent=`💗 ${modes[mode]} 💗 ｜ 点击照片查看大图 ｜ 双击切换`;
 });
 
-// touch / press
-fgCvs.addEventListener('touchstart',e=>{
-  e.preventDefault();
-  pressing=true; pressTimer=0;
-  for(const t of e.touches){
-    mouseX=t.clientX; mouseY=t.clientY;
-    interact(t.clientX,t.clientY,35);
-  }
+interactEl.addEventListener('touchstart',e=>{
+  if(isOnPhoto(e.target)) return;
+  e.preventDefault(); pressing=true; pressTimer=0;
+  for(const t of e.touches){ mouseX=t.clientX; mouseY=t.clientY; interact(t.clientX,t.clientY,35); }
 },{passive:false});
-
-fgCvs.addEventListener('touchmove',e=>{
+interactEl.addEventListener('touchmove',e=>{
+  if(isOnPhoto(e.target)) return;
   e.preventDefault();
-  for(const t of e.touches){
-    mouseX=t.clientX; mouseY=t.clientY;
-    if(mode===2){ // swipe mode
-      burst(t.clientX,t.clientY,8,{hue:rnd(340,30),hueVar:30,speed:3,life:2,r:2.5});
-    }
-  }
+  for(const t of e.touches){ mouseX=t.clientX; mouseY=t.clientY; if(mode===2) burst(t.clientX,t.clientY,8,{hue:rnd(340,30),hueVar:30,speed:3,life:2,r:2.5}); }
 },{passive:false});
-
-fgCvs.addEventListener('touchend',e=>{
-  pressing=false; mouseX=-999;
-});
-
-fgCvs.addEventListener('mousemove',e=>{
+interactEl.addEventListener('touchend',()=>{ pressing=false; mouseX=-999; });
+interactEl.addEventListener('mousemove',e=>{
   mouseX=e.clientX; mouseY=e.clientY;
-  if(pressing && mode===2){
-    burst(mouseX,mouseY,4,{hue:rnd(340,30),hueVar:30,speed:2.5,life:2,r:2});
-  }
-  // 偶尔尾迹
-  if(rnd(0,1)<0.25 && fgParts.length<450){
-    fgParts.push(new FgParticle(mouseX,mouseY,{
-      vx:rnd(-0.5,0.5),vy:rnd(-0.6,0.3),r:rnd(0.6,1.8),h:rnd(340,30),
-      life:rnd(0.8,2),fade:'late',friction:0.95,gravity:0.02,
-    }));
-  }
+  if(pressing && mode===2) burst(mouseX,mouseY,4,{hue:rnd(340,30),hueVar:30,speed:2.5,life:2,r:2});
+  if(rnd(0,1)<0.25 && fgParts.length<450) fgParts.push(new FgParticle(mouseX,mouseY,{vx:rnd(-0.5,0.5),vy:rnd(-0.6,0.3),r:rnd(0.6,1.8),h:rnd(340,30),life:rnd(0.8,2),fade:'late',friction:0.95,gravity:0.02}));
+});
+interactEl.addEventListener('mousedown',e=>{ if(isOnPhoto(e.target)) return; pressing=true; pressTimer=0; interact(e.clientX,e.clientY,50); });
+interactEl.addEventListener('mouseup',()=>{ pressing=false; });
+interactEl.addEventListener('mouseleave',()=>{ mouseX=-999; pressing=false; });
+
+// ============================================================
+//  照片查看器
+// ============================================================
+const viewer = document.getElementById('viewer');
+const viewerImg = document.getElementById('viewerImg');
+const viewerCounter = document.getElementById('viewerCounter');
+const photos = ['img/01.jpg','img/02.jpg','img/03.jpg'];
+let viewerIdx = 0, viewerOpen = false;
+
+function openViewer(idx){
+  viewerIdx = idx; viewerOpen = true;
+  viewerImg.src = photos[idx];
+  viewerCounter.textContent = `${idx+1} / ${photos.length}`;
+  viewer.classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+function closeViewer(){
+  viewerOpen = false;
+  viewer.classList.remove('active');
+  document.body.style.overflow = '';
+}
+function viewerNav(dir){
+  viewerIdx = (viewerIdx + dir + photos.length) % photos.length;
+  viewerImg.src = photos[viewerIdx];
+  viewerCounter.textContent = `${viewerIdx+1} / ${photos.length}`;
+}
+
+document.getElementById('viewerClose').addEventListener('click',closeViewer);
+document.getElementById('viewerPrev').addEventListener('click',e=>{ e.stopPropagation(); viewerNav(-1); });
+document.getElementById('viewerNext').addEventListener('click',e=>{ e.stopPropagation(); viewerNav(1); });
+viewer.addEventListener('click',e=>{ if(e.target===viewer) closeViewer(); });
+
+// 照片点击
+document.querySelectorAll('.polaroid').forEach(p=>{
+  p.addEventListener('click',e=>{ e.stopPropagation(); openViewer(parseInt(p.dataset.idx)); });
 });
 
-fgCvs.addEventListener('mousedown',e=>{
-  pressing=true; pressTimer=0;
-  interact(e.clientX,e.clientY,50);
+// 键盘导航
+document.addEventListener('keydown',e=>{
+  if(!viewerOpen) return;
+  if(e.key==='Escape') closeViewer();
+  if(e.key==='ArrowLeft') viewerNav(-1);
+  if(e.key==='ArrowRight') viewerNav(1);
 });
 
-fgCvs.addEventListener('mouseup',()=>{ pressing=false; });
-fgCvs.addEventListener('mouseleave',()=>{ mouseX=-999; pressing=false; });
+// 滑动切换
+let swipeStartX=0, swipeStartY=0;
+viewer.addEventListener('touchstart',e=>{ swipeStartX=e.touches[0].clientX; swipeStartY=e.touches[0].clientY; });
+viewer.addEventListener('touchend',e=>{
+  const dx=e.changedTouches[0].clientX-swipeStartX;
+  const dy=e.changedTouches[0].clientY-swipeStartY;
+  if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>40) viewerNav(dx>0?-1:1);
+});
 
 // ============================================================
 //  设备方向视差
 // ============================================================
 if(window.DeviceOrientationEvent){
-  window.addEventListener('deviceorientation',e=>{
-    tiltX=lerp(tiltX,(e.gamma??0)/45,0.05);  // -1..1
-    tiltY=lerp(tiltY,(e.beta??0)/45,0.05);
-  });
+  window.addEventListener('deviceorientation',e=>{ tiltX=lerp(tiltX,(e.gamma??0)/45,0.05); tiltY=lerp(tiltY,(e.beta??0)/45,0.05); });
 }
-function lerp(a,b,t){return a+(b-a)*t;}
 
 // ============================================================
 //  天数计算
 // ============================================================
 (function(){
-  const start=new Date('2025-01-01'); // 默认，可自行修改
-  const now=new Date();
-  const diff=Math.floor((now-start)/86400000);
-  document.getElementById('daysTxt').textContent=
-    `💫 我们在一起的第 ${diff} 天 💫`;
+  const start=new Date('2025-01-01');
+  const diff=Math.floor((new Date()-start)/86400000);
+  document.getElementById('daysTxt').textContent=`💫 我们在一起的第 ${diff} 天 💫`;
 })();
 
 // ============================================================
 //  主循环
 // ============================================================
-let lastTime=performance.now();
-let bgPartsTimer=0, meteorTimer=0;
+let lastTime=performance.now(), bgPartsTimer=0, meteorTimer=0;
 
 function update(dt){
   const cap=Math.min(dt,0.1);
-
-  // 前景粒子
-  for(let i=fgParts.length-1;i>=0;i--){
-    fgParts[i].update(cap);
-    if(!fgParts[i].alive()) fgParts.splice(i,1);
-  }
-
-  // 爱心持续呼吸
+  for(let i=fgParts.length-1;i>=0;i--){ fgParts[i].update(cap); if(!fgParts[i].alive()) fgParts.splice(i,1); }
   bgPartsTimer+=cap;
-  if(bgPartsTimer>0.1 && fgParts.length<300){
-    bgPartsTimer=0;
-    burstHeart(9,15,{hue:rnd(345,15),hueVar:25,life:rnd(3,6)});
-  }
-
-  // 流星
+  if(bgPartsTimer>0.1 && fgParts.length<300){ bgPartsTimer=0; burstHeart(9,15,{hue:rnd(345,15),hueVar:25,life:rnd(3,6)}); }
   meteorTimer+=cap;
-  if(meteorTimer>rnd(2.5,7)){
-    meteorTimer=0;
-    if(meteors.length<4) spawnMeteor();
-  }
-
-  // 长按连爆
-  if(pressing && mode===1){
-    pressTimer+=cap;
-    if(pressTimer>0.12 && mouseX>-900){
-      pressTimer=0;
-      interact(mouseX,mouseY,20);
-    }
-  }
+  if(meteorTimer>rnd(2.5,7)){ meteorTimer=0; if(meteors.length<4) spawnMeteor(); }
+  if(pressing && mode===1){ pressTimer+=cap; if(pressTimer>0.12 && mouseX>-900){ pressTimer=0; interact(mouseX,mouseY,20); } }
 }
 
-function draw(time){
-  drawBg(time);
-  drawPetals(time);
-  drawFg(time);
-}
+function draw(time){ drawBg(time); drawPetals(time); drawFg(time); }
 
 function loop(time){
-  const dt=(time-lastTime)/1000;
-  lastTime=time;
-  update(dt);
-  draw(time);
+  const dt=(time-lastTime)/1000; lastTime=time;
+  update(dt); draw(time);
   requestAnimationFrame(loop);
 }
 
-// 初始爆发
 setTimeout(()=>{
   burst(cx,cy-10,100,{hue:350,hueVar:40,speed:6,life:4.5,r:4});
   setTimeout(()=>burst(cx-60,cy-40,50,{hue:10,hueVar:30,speed:4,life:3.5,r:3}),180);
@@ -593,8 +630,7 @@ setTimeout(()=>{
 
 requestAnimationFrame(loop);
 
-console.log('💖 小周周 · ULTIMATE 版已就绪 💖');
-console.log('✨ 长按连爆 | 滑动轨迹 | 双击切换模式 ✨');
+console.log('💖 小周周 · ULTIMATE+PHOTOS 版已就绪 💖');
 </script>
 </body>
 </html>
